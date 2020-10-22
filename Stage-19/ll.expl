@@ -13,17 +13,19 @@ enddecl
 int main()
 {
   decl
-    int length, x;
+    int length, x,temp;
     List p, q;
   enddecl
 
   begin
+    temp = exposcall("Write",-2,"Entr Size");
     x = initialize();
     
     head=null;
     read(length); 
 
     q=head;
+    temp = exposcall("Write",-2,"Input");
     while (length!=0)  do
       read(x);
       p=alloc();
@@ -42,6 +44,7 @@ int main()
     endwhile;
 
     p=head;
+    temp = exposcall("Write",-2,"Output");
     while(p!=null)  do
       write(p.data);
       p=p.next;

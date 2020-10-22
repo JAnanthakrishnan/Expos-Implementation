@@ -2,13 +2,12 @@ load --library /home/ak/myexpos/expl/library.lib
 load --os /home/ak/Expos-Implementation/Stage-14/os_startup.xsm
 load --int=timer /home/ak/Expos-Implementation/Stage-14/timer_interrupt.xsm
 load --int=10 /home/ak/Expos-Implementation/Stage-14/init-10_stage_14.xsm
-load --init /home/ak/Expos-Implementation/Stage-16/GCD.xsm
+load --init /home/ak/Expos-Implementation/Stage-14/init_code_odd_numbrs.xsm
 load --exhandler /home/ak/Expos-Implementation/Stage-6/haltprog.xsm
 load --idle /home/ak/Expos-Implementation/Stage-12/idle_process.xsm
-load --int=6 /home/ak/Expos-Implementation/Stage-16/inter_6.xsm
+load --exec /home/ak/Expos-Implementation/Stage-14/even.xsm
 load --int=7 /home/ak/Expos-Implementation/Stage-15/int_7_stage_15.xsm
-load --int=console /home/ak/Expos-Implementation/Stage-16/console_inter.xsm
 load --module 0 /home/ak/Expos-Implementation/Stage-15/mod_0_st_15.xsm
-load --module 4 /home/ak/Expos-Implementation/Stage-16/mod_4_st_16.xsm
-load --module 5 /home/ak/Expos-Implementation/Stage-16/scheduler_module.xsm
-load --module 7 /home/ak/Expos-Implementation/Stage-16/boot_st_16.xsm
+load --module 4 /home/ak/Expos-Implementation/Stage-15/mod_4_st_15.xsm
+load --module 5 /home/ak/Expos-Implementation/Stage-14/module_5.xsm
+load --module 7 /home/ak/Expos-Implementation/Stage-15/boot_mod_7_st_15.xsm

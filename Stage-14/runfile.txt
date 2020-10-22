@@ -1,0 +1,12 @@
+load --library /home/ak/myexpos/expl/library.lib
+load --os /home/ak/Expos-Implementation/Stage-14/os_startup.xsm
+load --int=timer /home/ak/Expos-Implementation/Stage-14/timer_interrupt.xsm
+load --int=10 /home/ak/Expos-Implementation/Stage-14/init-10_stage_14.xsm
+load --init /home/ak/Expos-Implementation/Stage-14/init_code_odd_numbrs.xsm
+load --exhandler /home/ak/Expos-Implementation/Stage-6/haltprog.xsm
+load --module 5 /home/ak/Expos-Implementation/Stage-14/module_5.xsm
+load --module 7 /home/ak/Expos-Implementation/Stage-14/boot_module_7.xsm
+load --idle /home/ak/Expos-Implementation/Stage-12/idle_process.xsm
+load --exec /home/ak/Expos-Implementation/Stage-14/even.xsm
+load --int=7 /home/ak/Expos-Implementation/Stage-12/interrupt_7.xsm
+
