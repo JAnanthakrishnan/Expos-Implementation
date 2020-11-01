@@ -2,7 +2,7 @@ load --library /home/ak/myexpos/expl/library.lib
 load --os /home/ak/Expos-Implementation/Stage-14/os_startup.xsm
 load --int=timer /home/ak/Expos-Implementation/Stage-14/timer_interrupt.xsm
 load --int=10 /home/ak/Expos-Implementation/Stage-20/int_10.xsm
-load --init /home/ak/Expos-Implementation/Stage-17/shell.xsm
+load --init /home/ak/Expos-Implementation/Stage-20/Assignment1/odd.xsm
 load --exhandler /home/ak/Expos-Implementation/Stage-19/exception.xsm
 load --idle /home/ak/Expos-Implementation/Stage-12/idle_process.xsm
 load --int=6 /home/ak/Expos-Implementation/Stage-16/inter_6.xsm
@@ -17,6 +17,5 @@ load --module 2 /home/ak/Expos-Implementation/Stage-19/mod_2.xsm
 load --module 4 /home/ak/Expos-Implementation/Stage-18/mod_4.xsm
 load --module 5 /home/ak/Expos-Implementation/Stage-20/mod_5.xsm
 load --module 7 /home/ak/Expos-Implementation/Stage-20/mod_7.xsm
-load --exec /home/ak/Expos-Implementation/Stage-14/even.xsm
-load --exec /home/ak/Expos-Implementation/Stage-17/odd.xsm
-load --exec /home/ak/Expos-Implementation/Stage-19/ll.xsm
+load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/even.xsm
+load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/odd.xsm
