@@ -21,6 +21,7 @@ if(fun == 1) then
 		endif;
 	endwhile;
 	R0 = c;
+	breakpoint;
 	return;
 endif;
 if(fun == 2) then
@@ -37,6 +38,7 @@ if(fun == 2) then
 		endif;
 		counter = counter + 1;
 	endwhile;
+	breakpoint;
 	return;
 endif;
 	

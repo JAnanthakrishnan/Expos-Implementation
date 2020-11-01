@@ -2,7 +2,7 @@
 
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16)+13]=SP;
 SP=[PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+11]*512-1;
-
+breakpoint;
 backup;
 
 [DISK_STATUS_TABLE]=0; //Disk status bit to zero(i.e. it is free)
@@ -20,4 +20,5 @@ restore;
 
 //changing back to user stack
 SP=[PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+13];
+breakpoint;
 ireturn;
