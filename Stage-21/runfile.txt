@@ -21,3 +21,5 @@ load --module 5 /home/ak/Expos-Implementation/Stage-20/mod5.xsm
 load --module 7 /home/ak/Expos-Implementation/Stage-21/mod7.xsm
 load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/even.xsm
 load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/odd.xsm
+load --exec /home/ak/Expos-Implementation/Stage-21/Assignment2/pid.xsm
+load --exec /home/ak/Expos-Implementation/Stage-21/Assignment2/fork3.xsm

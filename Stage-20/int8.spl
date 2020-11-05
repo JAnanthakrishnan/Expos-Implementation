@@ -76,6 +76,8 @@ while(i < 16) do
 	i = i + 1;
 endwhile;
 
+//set pid field in child proccess_table
+[PROCESS_TABLE + (childPID * 16) + 1] = childPID;
 //set ppid field in child process_table
 [PROCESS_TABLE + (childPID * 16) + 2] = parentPID;
 //set tick field for child
