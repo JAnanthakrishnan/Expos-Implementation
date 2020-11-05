@@ -1,0 +1,118 @@
+//--------------------PROCESS MANAGER MODULE------------------
+alias funcNum R1;
+alias currPID R2;
+
+//----------Free User Area Page--------
+if(funcNum == FREE_USER_AREA_PAGE) then
+	alias userAreaPageNum R3;
+	userAreaPageNum = [PROCESS_TABLE + (currPID * 16) + 11];
+	backup;
+	R1 = RELEASE_PAGE;
+	R2 = userAreaPageNum;
+
+	//call memory manager
+	call MOD_2; 
+
+	restore;
+	return;
+endif;
+//-------------------------------------
+
+//----------Exit Process---------------
+if(funcNum == EXIT_PROCESS) then
+
+	//if exit_process is not called from exec()
+	if([PROCESS_TABLE + (currPID * 16) + 9] != 9) then
+		alias i R3;
+		i = 0;
+		while(i<16) do
+			//wake up all process waiting for current process to exit
+			if(([PROCESS_TABLE+(i*16)+4] == WAIT_PROCESS) && ([PROCESS_TABLE + (i*16) + 5] == currPID)) then
+				[PROCESS_TABLE + (i * 16) + 4] = READY;
+			endif;
+			//make children of current process orphan
+			if([PROCESS_TABLE + (i * 16) + 2] == currPID) then
+				[PROCESS_TABLE + (i * 16) + 2] = -1;
+			endif;
+			i = i + 1;
+		endwhile;
+	endif;
+	
+	//deallocate page table entries
+	backup;
+	R1 = FREE_PAGE_TABLE;
+	R2 = currPID;
+	call MOD_1;
+	restore;
+
+	//free user area page
+	backup;
+	R1 = FREE_USER_AREA_PAGE;
+	R2 = currPID;
+	call MOD_1;
+	restore;
+
+	//set state to TERMINATED
+	[PROCESS_TABLE + (currPID * 16) + 4] = TERMINATED;
+	return;
+endif;
+//-------------------------------------
+
+//------Free Page Table(final)---------
+if(funcNum == FREE_PAGE_TABLE) then
+	alias temp R4;
+	alias disk_entry R5;
+	PTBR = PAGE_TABLE_BASE + currPID * 20;
+	[PTBR + 0] = -1;
+	[PTBR + 1] = "0000";
+	[PTBR + 2] = -1;
+	[PTBR + 3] = "0000";
+	disk_entry = (currPID * 10) + DISK_MAP_TABLE;
+	temp = 0;
+	while(temp < 10) do
+		if(([disk_entry + temp] != -1) && (temp == 2 || temp == 3 || temp == 8 || temp == 9)) then
+			backup;
+			R1 = RELEASE_BLOCK;
+			R2 = [disk_entry + temp];	//block number
+			call MOD_2;			//memory manager
+			restore;
+		endif;
+		[disk_entry + temp] = -1;
+		temp = temp + 1;
+	endwhile;
+	temp = 4;
+	while(temp < 20) do
+		if([PTBR + temp] != -1) then
+			backup;
+			R1 = RELEASE_PAGE;
+			R2 = [PTBR + temp];
+			call MOD_2;
+			restore;
+			[PTBR + temp] = -1;
+			[PTBR + temp + 1] = "0000";
+		endif;
+		temp = temp + 2;
+	endwhile;
+	return;
+endif;
+//-------------------------------------
+
+//--------Get PCB Entry(final)---------
+if(funcNum == GET_PCB_ENTRY) then
+	alias i R3;
+	i = 0;
+	while(i < 16) do
+		if([PROCESS_TABLE + (i * 16) + 4] == TERMINATED) then
+			R0 = i;		//pid of new process
+			[PROCESS_TABLE + (i * 16) + 4] = ALLOCATED;
+			[PROCESS_TABLE + (i * 16) + 14] = PAGE_TABLE_BASE + (20 * i);
+			[PROCESS_TABLE + (i * 16) + 15] = 10;
+			return;
+		endif;
+		i = i + 1;
+	endwhile;
+	R0 = -1;	//if index is not found
+	return;
+endif;
+//-------------------------------------
+return;

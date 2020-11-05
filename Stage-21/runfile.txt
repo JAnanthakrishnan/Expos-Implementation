@@ -1,0 +1,23 @@
+load --library /home/ak/myexpos/expl/library.lib
+load --os /home/ak/Expos-Implementation/Stage-20/os_startup.xsm
+load --int=timer /home/ak/Expos-Implementation/Stage-20/timer.xsm
+load --int=10 /home/ak/Expos-Implementation/Stage-20/int10.xsm
+load --init /home/ak/Expos-Implementation/Stage-21/shell2.xsm
+load --exhandler /home/ak/Expos-Implementation/Stage-20/exception_handler.xsm
+load --idle /home/ak/Expos-Implementation/Stage-12/idle_process.xsm
+load --int=6 /home/ak/Expos-Implementation/Stage-20/int6.xsm
+load --int=7 /home/ak/Expos-Implementation/Stage-20/int7.xsm
+load --int=8 /home/ak/Expos-Implementation/Stage-20/int8.xsm
+load --int=console /home/ak/Expos-Implementation/Stage-20/console_interrupt.xsm
+load --int=disk /home/ak/Expos-Implementation/Stage-20/disk_interrupt.xsm
+load --int=9 /home/ak/Expos-Implementation/Stage-20/int9.xsm
+load --int=11 /home/ak/Expos-Implementation/Stage-21/int11.xsm
+load --int=15 /home/ak/Expos-Implementation/Stage-21/int15.xsm
+load --module 0 /home/ak/Expos-Implementation/Stage-20/mod0.xsm
+load --module 1 /home/ak/Expos-Implementation/Stage-21/mod1.xsm
+load --module 2 /home/ak/Expos-Implementation/Stage-20/mod2.xsm
+load --module 4 /home/ak/Expos-Implementation/Stage-20/mod4.xsm
+load --module 5 /home/ak/Expos-Implementation/Stage-20/mod5.xsm
+load --module 7 /home/ak/Expos-Implementation/Stage-21/mod7.xsm
+load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/even.xsm
+load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/odd.xsm
