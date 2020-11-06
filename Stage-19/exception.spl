@@ -1,5 +1,5 @@
 //Exception Handler
-breakpoint;
+//breakpoint;
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = -1; //Setting mode flag to -1
 
 [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP; //Saving sp value in UPTR field
