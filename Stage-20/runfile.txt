@@ -2,7 +2,7 @@ load --library /home/ak/myexpos/expl/library.lib
 load --os /home/ak/Expos-Implementation/Stage-20/os_startup.xsm
 load --int=timer /home/ak/Expos-Implementation/Stage-20/timer.xsm
 load --int=10 /home/ak/Expos-Implementation/Stage-20/int10.xsm
-load --init /home/ak/Expos-Implementation/Stage-20/Assignment1/Assgn2.xsm
+load --init /home/ak/Expos-Implementation/Stage-20/Assignment1/parent_sample.xsm
 load --exhandler /home/ak/Expos-Implementation/Stage-20/exception_handler.xsm
 load --idle /home/ak/Expos-Implementation/Stage-12/idle_process.xsm
 load --int=6 /home/ak/Expos-Implementation/Stage-20/int6.xsm

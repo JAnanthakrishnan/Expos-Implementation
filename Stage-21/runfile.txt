@@ -23,3 +23,4 @@ load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/even.xsm
 load --exec /home/ak/Expos-Implementation/Stage-20/Assignment1/odd.xsm
 load --exec /home/ak/Expos-Implementation/Stage-21/Assignment2/pid.xsm
 load --exec /home/ak/Expos-Implementation/Stage-21/Assignment2/fork3.xsm
+load --exec /home/ak/Expos-Implementation/Stage-21/sample.xsm

@@ -12,6 +12,19 @@ process_table_entry = PROCESS_TABLE+(current_pid*16);
 [process_table_entry+14]=PTBR;		//save PTBR
 [process_table_entry+15]=PTLR;		//save PTLR
 
+alias maxCount R10;
+maxCount = 0;
+alias memCount R11;
+memCount = MEMORY_FREE_LIST;
+while(maxCount<128) do
+	maxCount = maxCount + 1;
+	if([memCount + maxCount]==0) then
+ 		break;
+	endif;
+endwhile;
+if(maxCount>[29586]) then 
+	[29586] = maxCount;
+endif;
 [29584] = [29584] + 1;
 
 alias newPID R2;

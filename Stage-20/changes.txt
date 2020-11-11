@@ -1,0 +1,4 @@
+interrupt 10
+get pcb entry - process manager module
+scheduler module - bp of child process
+fork system call
