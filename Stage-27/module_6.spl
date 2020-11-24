@@ -1,18 +1,17 @@
-//-------------------------------------------------Pager Module------------------------------------
+//-------------------------------------------------Pager Module-----------------------------------------------
 
 alias funcNum R1;
 alias currPID R2;
 
-
-//-------------------Swap Out(1) (final)-----------------------------------
+//--------------------------Swap Out(1)(final)------------------------------
 if(funcNum == SWAP_OUT) then
-    alias i R3;
-    alias non_swapped_process R4;
-
-    //find non_swapped process in wait_process state
-    i = 3;
-    non_swapped_process = -1;
-    while(i < 16) do
+	alias i R3;
+	alias non_swapped_process R4;
+	
+	//find non_swapped process in wait_process state
+	i = 3;
+	non_swapped_process = -1;
+	while(i < 16) do
 		alias process_table R5;
 		process_table = PROCESS_TABLE + (16 * i);
 		if(([process_table + 4] == WAIT_PROCESS) && ([process_table + 6] == 0)) then
@@ -20,9 +19,9 @@ if(funcNum == SWAP_OUT) then
 			break;
 		endif;
 		i = i + 1;
-    endwhile;
+	endwhile;
 
-    //if there are no non-swapped processes in wait_process state
+	//if there are no non-swapped processes in wait_process state
 	//find non-swapped process in wait_semaphore state
 	if(non_swapped_process == -1) then
 		i = 3;
@@ -62,20 +61,20 @@ if(funcNum == SWAP_OUT) then
 		R0 = -1;
 		return;
 	endif;
-    
-    alias non_swap_process_table R5;
-    alias non_swap_PTBR R6;
-    non_swap_process_table = PROCESS_TABLE + (non_swapped_process * 16);
-    non_swap_PTBR = PAGE_TABLE_BASE + (20 * non_swapped_process);
 
-    //set tick field of found process to 0, tick starts again after swap
-    [non_swap_process_table] = 0;
+	alias non_swap_process_table R5;
+	alias non_swap_PTBR R6;
+	non_swap_process_table = PROCESS_TABLE + (non_swapped_process * 16);
+	non_swap_PTBR = PAGE_TABLE_BASE + (20 * non_swapped_process);
 
-    //invalidate and release valid heap, code, and Stack pages of process
-    alias page R7;
-    alias swap_block R8;
-    i = 4;
-    while(i < 20) do
+	//set tick field of found process to 0, tick starts again after swap
+	[non_swap_process_table] = 0;
+
+	//invalidate and release valid heap, code, stack pages of process
+	alias page R7;
+	alias swap_block R8;
+	i = 4;
+	while(i < 20) do
 		page = [non_swap_PTBR + i];
 		if(page == -1) then
 			i = i + 2;
@@ -121,9 +120,9 @@ if(funcNum == SWAP_OUT) then
 			[non_swap_PTBR + i + 1] = "0000";
 		endif;
 		i = i + 2;
-    endwhile;
+	endwhile;
 
-    //set swap_flag field in process_table entry of non swapped process process to 1
+	//set swap_flag field in process_table entry of non swapped process process to 1
 	[non_swap_process_table + 6] = 1;
 
 	//increment swap_count and reset the paging_status back to 0
@@ -131,9 +130,8 @@ if(funcNum == SWAP_OUT) then
 	[SYSTEM_STATUS_TABLE + 5] = 0;
 	
 	return;
-
 endif;
-//-------------------------------------------------------------------------
+//--------------------------------------------------------------------------
 
 //--------------------------Swap In(2)(final)-------------------------------
 if(funcNum == SWAP_IN) then
@@ -240,4 +238,4 @@ if(funcNum == SWAP_IN) then
 endif;
 //--------------------------------------------------------------------------
 
-//-------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
