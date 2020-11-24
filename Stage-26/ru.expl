@@ -13,7 +13,7 @@ int main()
 			while(ret == 0) do
 				ret = exposcall("Seek",fd,2);
 				ret = exposcall("Read",fd,usr);
-				if((filename != "-1") AND (usr == username)) then
+				if((filename != "-1")) then
 					ret = exposcall("Delete",filename);
 				endif;
 				ret = exposcall("Seek",fd,4);

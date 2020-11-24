@@ -34,3 +34,7 @@ load --exec /home/ak/Expos-Implementation/Stage-25/cat.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/cp.xsm
 load --exec /home/ak/Expos-Implementation/Stage-26/lu.xsm
 load --exec /home/ak/Expos-Implementation/Stage-26/ru.xsm
+load --data /home/ak/Expos-Implementation/Stage-24/sample.dat
+load --data /home/ak/Expos-Implementation/Stage-24/numbers.dat
+load --exec /home/ak/Expos-Implementation/Stage-23/create.xsm
+load --exec /home/ak/Expos-Implementation/Stage-23/delete.xsm

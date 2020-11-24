@@ -2,7 +2,7 @@
 int main()
 {
 	decl
-		int ret,fd,perm,i;
+		int ret,fd,perm,i,data;
 		str mystr;
 	enddecl
 	begin
@@ -21,10 +21,10 @@ int main()
 		i = exposcall("Seek",fd,-1);
 		i = exposcall("Read",fd,perm);
 		while(i == 0) do
-			ret = exposcall("Write",-2,perm);
+			ret = exposcall("Write",-2,data);
 			i = exposcall("Seek",fd,-2);
 			if(i == 0) then
-				i = exposcall("Read",fd,perm);
+				i = exposcall("Read",fd,data);
 			else
 				break;
 			endif;
