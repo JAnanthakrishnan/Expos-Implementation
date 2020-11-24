@@ -1,68 +1,70 @@
-//-----------------------------------ROUND ROBIN SCHEDULER------------------------------------
-alias current_pid R0;
-alias process_table_entry R1;
-alias newPID R2;
-alias tempPID R3;
+//CUR PROCS ID
+alias cur_pid R0;
+cur_pid = [SYSTEM_STATUS_TABLE + 1];
 
-multipush(BP);
+//PUSH BP ONTO KERNEL STACK
+multipush (BP);
 
-current_pid = [SYSTEM_STATUS_TABLE + 1];
-process_table_entry = PROCESS_TABLE+(current_pid*16);
+alias cur_procs_table R1;
+cur_procs_table = PROCESS_TABLE + cur_pid*16 ;
 
-//save context of current process
-[process_table_entry + 12] = SP % 512;	//kernel stack pointer
-[process_table_entry + 14] = PTBR;	//save PTBR
-[process_table_entry + 15] = PTLR;	//save PTLR
+//save the KPTR, PTBR, PTLR
+[cur_procs_table + 12] = SP % 512;
+[cur_procs_table + 14] = PTBR;
+[cur_procs_table + 15] = PTLR;
 
-//--------------------Select new process-----------------------
+alias new_pid R2;
+alias temp_pid R3;
+alias temp_mode R4;
 
-newPID = 0;	//by default idle
-tempPID = current_pid+1;
+new_pid = 0;	//DEFAULT PID TO 0
 
-if([SYSTEM_STATUS_TABLE + 5] != 0) then
-	//paging on
-	alias swapperPT R4;
-	swapperPT = PROCESS_TABLE + (15 * 16);
-	if(([swapperPT + 4] != READY) && ([swapperPT + 4] != RUNNING) && ([swapperPT + 4] != CREATED)) then
-		newPID = 0;
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+	//paging ongoing
+	if ([PROCESS_TABLE + SWAPPER_DAEMON*16 + 4] == WAIT_DISK) then
+		//schedule idle
+		new_pid = 0;		
 	else
-		newPID = 15;
+		//schedule swapper daemon
+		new_pid = SWAPPER_DAEMON;
 	endif;
 else
-	//paging off select non swapped process excluding swapper daemon
-	while(tempPID < 15) do
-		alias temp R4;
-		temp = PROCESS_TABLE + (tempPID * 16);
-		if((([temp + 4] == READY) || ([temp + 4] == CREATED)) && ([temp + 6] == 0)) then
-			newPID=tempPID;
+	//normal scheduling
+	//schedule the process starting from cur_pid + 1
+	temp_pid = cur_pid + 1;
+	//excluding swapper daemon
+	while(temp_pid < MAX_PROC_NUM-1) do
+		temp_mode = [PROCESS_TABLE + temp_pid*16 + 4]; 
+		//next non swapped process
+		//in ready or created state
+		if(((temp_mode == READY) || (temp_mode == CREATED)) && ([PROCESS_TABLE + temp_pid*16 + 6] == 0)) then
+			new_pid = temp_pid;
 			break;
 		endif;
-		tempPID = tempPID + 1;
-	endwhile;
+		temp_pid = temp_pid + 1;	
+	endwhile; 
 endif;
-//-------------------------------------------------------------
 
-//---------------Change context to newly found process---------
-alias newPT R4;
-newPT = PROCESS_TABLE + (newPID * 16);
-//kernel stack of restored process
-SP = [newPT + 11] * 512 + [newPT + 12];
-PTBR = [newPT + 14];
-PTLR = [newPT + 15];
-[SYSTEM_STATUS_TABLE + 1] = newPID;
-//--------------------------------------------------------------
+//update PTBR,PTLR,PID
+SP = [PROCESS_TABLE + new_pid*16 + 11] * 512 + [PROCESS_TABLE + new_pid*16 + 12];
+PTBR = [PROCESS_TABLE + new_pid*16 + 14];
+PTLR = [PROCESS_TABLE + new_pid*16 + 15];
+[SYSTEM_STATUS_TABLE + 1] = new_pid;
 
-if([newPT + 4] == CREATED) then
-	//assign BP of new process as first word from its kernel stack
-	BP = [[newPT + 11] * 512];
-	SP = [newPT + 13];
-	[newPT + 4] = RUNNING;
-	[newPT + 9] = 0;
+//if CREATED, change state to running and SP to UASP then return back to user process
+if( [PROCESS_TABLE + new_pid*16 + 4] == CREATED) then
+	SP = [PROCESS_TABLE + new_pid*16 + 13];
+	BP = [[PROCESS_TABLE + new_pid * 16 + 11] * 512];		//BP set to previously saved BP value on top of kernel stack during fork system call
+	[PROCESS_TABLE + new_pid*16 + 4] = RUNNING;
+	[PROCESS_TABLE + new_pid*16 + 9] = 0;
 	ireturn;
 endif;
 
-[newPT + 4] = RUNNING;
+//change the state of process to RUNNING
+[PROCESS_TABLE + new_pid*16 + 4] = RUNNING;
+
+//restore BP
 multipop(BP);
 
 return;
-//-------------------------------------------------------------------------------------------
+

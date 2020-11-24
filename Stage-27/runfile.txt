@@ -28,14 +28,17 @@ load --module 3 /home/ak/Expos-Implementation/Stage-27/module_3.xsm
 load --module 4 /home/ak/Expos-Implementation/Stage-27/module_4.xsm
 load --module 5 /home/ak/Expos-Implementation/Stage-27/module_5.xsm
 load --module 7 /home/ak/Expos-Implementation/Stage-27/module_7.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/assgn1.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/pid.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/assgn2.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/assgn3.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/pgm1.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/assgn4.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/pgm2.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/merge.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/m_store.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/m_sort.xsm
+load --exec /home/ak/Expos-Implementation/Stage-27/Assignments/m_merge.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/ls.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/rm.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/cat.xsm
-load --exec /home/ak/Expos-Implementation/Stage-25/cp.xsm
-load --exec /home/ak/Expos-Implementation/Stage-26/lu.xsm
-load --exec /home/ak/Expos-Implementation/Stage-26/ru.xsm
-load --data /home/ak/Expos-Implementation/Stage-24/sample.dat
-load --data /home/ak/Expos-Implementation/Stage-24/numbers.dat
-load --exec /home/ak/Expos-Implementation/Stage-23/create.xsm
-load --exec /home/ak/Expos-Implementation/Stage-23/delete.xsm
-load --exec /home/ak/Expos-Implementation/Stage-27/assgn2.xsm

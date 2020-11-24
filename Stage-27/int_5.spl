@@ -1,242 +1,211 @@
-//-------------------------------------------INTERRUPT 5 MODULE-----------------------------------------
+//--------------------------------------------INTERRUPT 5--------------------------------------------------
 
-//extract info from user stack
-alias currPID R0;
-alias userSP R1;
-alias process_table R2;
-alias ret R3;
-alias sys_call_num R4;
+alias phy_pg_num R2;
+alias offset R3;
+alias userSP R5;
+alias curPID R6;
+alias sys_call_num R7;
+alias retaddrs R8;
+alias filename R9;
+
+curPID = [SYSTEM_STATUS_TABLE + 1];
+
 userSP = SP;
-currPID = [SYSTEM_STATUS_TABLE + 1];
-process_table = PROCESS_TABLE + (16 * currPID);
-ret = [PTBR + 2 * ((userSP - 1) / 512)] * 512 + (userSP - 1) % 512;
-sys_call_num = [[PTBR + 2 * ((userSP - 5) / 512)] * 512 + (userSP - 5) % 512];
-[process_table + 13] = SP;
-SP = [process_table + 11] * 512 - 1;
+[PROCESS_TABLE + curPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + curPID*16 + 11]*512 - 1;
 
-//------------------Open System Call(2)(final)-----------------
-if(sys_call_num == 2) then
-	alias i R5;
-	alias resource_table R6;
-	alias filename R7;
-	alias open_file_entry R8;
+phy_pg_num = [PTBR + 2*(userSP-5)/512];
+offset = (userSP-5)%512;
+sys_call_num = [phy_pg_num*512 + offset];
 
-	resource_table = [process_table + 11] * 512 + 496;
-	filename = [[PTBR + 2 * ((userSP - 4) / 512)] * 512 + (userSP - 4) % 512];
-	[process_table + 9] = sys_call_num;
+[PROCESS_TABLE + curPID*16 + 9] = sys_call_num;
 
-	//find free per-process resource index
-	i = 0;
-	while(i < 8) do
-		if([resource_table + (2 * i)] == -1) then
-			break;		
+phy_pg_num = [PTBR + 2*(userSP-1)/512];
+offset = (userSP-1)%512;
+retaddrs = phy_pg_num*512 + offset;
+
+phy_pg_num = [PTBR + 2*(userSP-4)/512];
+offset = (userSP-4)%512;
+filename = [phy_pg_num*512 + offset];
+
+if (sys_call_num == INT_OPEN) then
+
+	alias filedesc R10;
+	alias UAPN R11;
+	UAPN = [PROCESS_TABLE + curPID*16 + 11];
+	filedesc = 0;
+	while (filedesc < 8) do
+		if ([UAPN*512 + 496 + 2*filedesc] == -1) then
+			//free entry found
+			//in per process resource table
+			break;
 		endif;
-		i = i + 1;
+		filedesc = filedesc+1;
 	endwhile;
 
-	//if no entry return -3 :(
-	if(i == 8) then
-		[ret] = -3;
-		[process_table + 9] = 0;
+	if (filedesc >= 8) then
+		//Process has reached its limit of resources
+		[retaddrs] = -3;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
 		SP = userSP;
 		ireturn;
 	endif;
 
-	//call open() from file manager module to get open file table entry
-	multipush(R0,R1,R2,R3,R4,R5,R6,R7,R9);
+	multipush(R5,R6,R7,R8,R9,R10,R11);
 	R1 = OPEN;
 	R2 = filename;
 	call MOD_3;
-	open_file_entry = R0;
-	multipop(R0,R1,R2,R3,R4,R5,R6,R7,R9);
-	
-	//if file not found or file is not data or root file :(
-	if(open_file_entry == -1) then
-		[ret] = -1;
-		[process_table + 9] = 0;
+	multipop(R5,R6,R7,R8,R9,R10,R11);
+
+	if ((R0 == -1) || (R0 == -2)) then
+		//-1 data file error i.e. given exec file
+		//-2 system has reached its limit of open files
+		[retaddrs] = R0;	
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
 		SP = userSP;
 		ireturn;
 	endif;
 
-	//if system has reached its limit of open files :(
-	if(open_file_entry == -2) then
-		[ret] = -2;
-		[process_table + 9] = 0;
-		SP = userSP;
-		ireturn;
-	endif;
+	//resource identifier field set to file
+	[UAPN*512 + 496 + 2*filedesc] = FILE;
+	//open file table index field to the 
+	//open file table entry found
+	[UAPN*512 + 496 + 2*filedesc + 1] = R0;
 	
-	//set per-process resource table
-	[resource_table + (2 * i)] = FILE;			//identifier
-	[resource_table + (2 * i) + 1] = open_file_entry;	//free open file entry
-	
-	//success :)
-	[process_table + 9] = 0;
-	[ret] = i;
-	SP = userSP;
-	ireturn;
+	//index of the per process resource table
+	//success
+	[retaddrs] = filedesc;
+
 endif;
-//-------------------------------------------------------------
 
-//------------------Close System Call(3)(final)----------------
-if(sys_call_num == 3) then
-	alias i R5;
-	alias file_descriptor R6;
-	alias resource_table R7;
-	alias open_file_entry R8;
+if (sys_call_num == INT_CLOSE) then
 
-	resource_table = [process_table + 11] * 512 + 496;
-	[process_table + 9] = sys_call_num;
-	file_descriptor = [[PTBR + 2 * ((userSP - 4) / 512)] * 512 + (userSP - 4) % 512];
-	
-	//if file descriptor is invalid :(
-	if((file_descriptor < 0) || (file_descriptor > 7)) then
-		[ret] = -1;
-		[process_table + 9] = 0;
+	alias filedesc R9;
+	alias UAPN R10;
+	UAPN = [PROCESS_TABLE + curPID*16 + 11];
+
+	if ((filedesc < 0) || (filedesc > 7) || ([UAPN*512 + 496 + filedesc*2] != FILE)) then
+		//invalid file descriptor
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
 		SP = userSP;
 		ireturn;
 	endif;
 
-	//if file_descriptor does not belong to file :(
-	if(([resource_table + (2 * file_descriptor)] != FILE) || ([resource_table + (2 * file_descriptor)] == -1)) then
-		[ret] = -1;
-		[process_table + 9] = 0;
-		SP = userSP;
-		ireturn;
-	endif;
+	//index of the open file table entry 
+	//from per process resource table entry	
+	alias openindex R11;
+	openindex = [UAPN*512 + 496 + filedesc*2 + 1];
 
-	//get open_file_table_entry
-	open_file_entry = [resource_table + (2 * file_descriptor) + 1];
-
-	//call close() function in file_manager_module
 	backup;
 	R1 = CLOSE;
-	R2 = open_file_entry;
+	R2 = openindex;
 	call MOD_3;
 	restore;
 
-	//invalidate per-process resource table entry
-	[resource_table + (2 * file_descriptor)] = -1;
-	[resource_table + (2 * file_descriptor) + 1] = -1;
+	[UAPN*512 + 496 + filedesc*2] = -1;
+	
+	[retaddrs] = 0;
 
-	//success :)
-	[ret] = 0;
-	[process_table + 9] = 0;
-	SP = userSP;
-	ireturn;
 endif;
-//-------------------------------------------------------------
 
-//------------------Seek System Call(6)(final)-----------------
-if(sys_call_num == 6) then
-	alias file_descriptor R5;
-	alias offset R6;
-	alias resource_table R7;
-	alias open_file_entry R8;
-	alias inode R9;
-	alias open_file_table R10;
-	alias inode_table R11;
-	alias lseek R12;
-	alias file_size R13;
+if (sys_call_num == INT_SEEK) then
 
-	[process_table + 9] = sys_call_num;
+	alias filedesc R9;
+	alias UAPN R10;
+	alias openindex R11;
+	alias inodeindex R12;
+	alias lseek R13;
+	alias filesize R14;
+	alias fileoffset R7;
+	
+	phy_pg_num = [PTBR + 2*(userSP-3)/512];
+	offset = (userSP-3)%512;
+	fileoffset = [phy_pg_num*512 + offset];
+	
+	phy_pg_num = [PTBR + 2*(userSP-4)/512];
+	offset = (userSP-4)%512;
+	filedesc = [phy_pg_num*512 + offset];
 
-	file_descriptor = [[PTBR + 2 * ((userSP - 4) / 512)] * 512 + (userSP - 4) % 512];
-	offset		= [[PTBR + 2 * ((userSP - 3) / 512)] * 512 + (userSP - 3) % 512];
-	resource_table 	= [process_table + 11] * 512 + 496;
-
-	//file descriptor is invalid :(
-	if((file_descriptor < 0) || (file_descriptor > 7)) then
-		[ret] = -1;
-		[process_table + 9] = 0;
+	UAPN = [PROCESS_TABLE + (curPID*16) + 11];
+	
+	if ((filedesc < 0) || (filedesc > 7) || ([UAPN*512 + 496 + filedesc*2] != FILE)) then
+		//invalid file descriptor
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
 		SP = userSP;
 		ireturn;
 	endif;
+	
+	openindex = [UAPN*512 + 496 + filedesc*2 + 1];
+	
+	inodeindex = [OPEN_FILE_TABLE + 4*openindex];
 
-	//identifier is not FILE :(
-	if([resource_table + (2 * file_descriptor)] != FILE) then
-		[ret] = -1;
-		[process_table + 9] = 0;
-		SP = userSP;
-		ireturn;
-	endif;
-
-	open_file_entry = [resource_table + (2 * file_descriptor) + 1];
-	open_file_table = OPEN_FILE_TABLE + (4 * open_file_entry);
-	inode		= [open_file_table];
-	inode_table	= INODE_TABLE + (16 * inode);
-
-	//acquire_inode() in resource manager
-	backup;
+	multipush(R5,R6,R7,R8,R9,R10,R11,R12);
 	R1 = ACQUIRE_INODE;
-	R2 = currPID;
-	R3 = inode;
+	R2 = inodeindex;
+	R3 = curPID;
 	call MOD_0;
-	//acquiring inode fails
-	if(R0 == -1) then
-		restore;
-		[ret] = -1;
-		[process_table + 9] = 0;
+	multipop(R5,R6,R7,R8,R9,R10,R11,R12);
+	
+	if (R0 == -1) then
+		//couldn't acquire inode
+		[retaddrs] = -1;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
 		SP = userSP;
 		ireturn;
 	endif;
-	restore;
+
+	lseek = [OPEN_FILE_TABLE + openindex*4 + 2];
 	
-	//get current lseek position from open_file_table
-	lseek = [open_file_table + 2];
-	
-	//backup;
-	//print lseek;
-	//restore;
-	
-	file_size = [inode_table + 2];
-	//if root_file then size is fixed 480
-	if(inode == INODE_ROOT) then
-		file_size = 480;
+	if (inodeindex == INODE_ROOT) then
+		filesize = 480;
+	else
+		filesize = [INODE_TABLE + inodeindex*16 + 2];
 	endif;
 
-	//file pointer becomes negative :(
-	if((lseek + offset) < 0) then
+
+	if (lseek + fileoffset < 0) then
 		backup;
 		R1 = RELEASE_INODE;
-		R2 = currPID;
-		R3 = inode;
+		R2 = inodeindex;
+		R3 = curPID;
 		call MOD_0;
 		restore;
-		[ret] = -2;
-		[process_table + 9] = 0;
+	
+		//new lseek becomes negative
+		[retaddrs] = -2;
+		[PROCESS_TABLE + curPID*16 + 9] = 0;
 		SP = userSP;
 		ireturn;
 	endif;
-	
-	if(offset == 0) then
-		[open_file_table + 2] = 0;
+
+	if (fileoffset == 0) then
+		[OPEN_FILE_TABLE + openindex*4 + 2] = 0;
 	else
-		if((lseek + offset) > file_size) then
-			[open_file_table + 2] = file_size;
+		if (lseek + fileoffset > filesize) then
+			[OPEN_FILE_TABLE + openindex*4 + 2] = filesize;
 		else
-			[open_file_table + 2] = lseek + offset;
+			[OPEN_FILE_TABLE + openindex*4 + 2] = lseek + fileoffset;
 		endif;
 	endif;
 
-	//backup;
-	//print [open_file_table + 2];
-	//restore;
-
-	//release_inode() in resource manager
+	
 	backup;
 	R1 = RELEASE_INODE;
-	R2 = currPID;
-	R3 = inode;
+	R2 = inodeindex;
+	R3 = curPID;
 	call MOD_0;
 	restore;
-	
-	//success :)
-	[ret] = 0;
-	[process_table + 9] = 0;
-	SP = userSP;
-	ireturn;
-endif;
-//-------------------------------------------------------------
 
-//------------------------------------------------------------------------------------------------------
+	//success
+	[retaddrs] = 0;
+
+endif;
+
+[PROCESS_TABLE + curPID*16 + 9] = 0;
+
+SP = userSP;
+
+ireturn;
+

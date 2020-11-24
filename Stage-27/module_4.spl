@@ -1,96 +1,117 @@
-//---------------------------------------DEVICE MANAGER MODULE--------------------------------------------
-alias funcNum R1;
-alias currPID R2;
-//R1 --> function Name
-//R2 --> PID of curr_proc
+//----------------------------Device Manager Module-------------------------------
+//------------------------------Module 4------------------------------------------
 
-//-----Terminal Write function-----
-if(funcNum == TERMINAL_WRITE) then
+alias functionNum R1;
+alias currentPID R2;
 
-	//-------CALLING ACQUIRE TERMINAL------
+if (functionNum == DISK_STORE) then
+
+	alias pagenum R3;
+	alias blocknum R4;
+
 	backup;
-	R1 = ACQUIRE_TERMINAL;	//set R1 to 8 for acquiring terminal
-	R2 = [SYSTEM_STATUS_TABLE + 1];	//set R2 to PID of curr_proc
-	call MOD_0;	//call resource manager module
+	R1 = ACQUIRE_DISK;
+	R2 = currentPID;
+	call MOD_0;
 	restore;
-	print R3;
-	//------------------------------------
 
-	//------CALLING RELEASE TERMINAL-----
+	//store bit
+	[DISK_STATUS_TABLE + 1] = 1;
+	//page number
+	[DISK_STATUS_TABLE + 2] = pagenum;
+	//block number
+	[DISK_STATUS_TABLE + 3] = blocknum;
+
+	store(pagenum,blocknum);
+	
+	[PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
+
 	backup;
-	R1 = RELEASE_TERMINAL;	//set R1 to 9 for releasing terminal
-	R2 = [SYSTEM_STATUS_TABLE+1];
-	call MOD_0;	//call resource manager module
+	call MOD_5;
 	restore;
-	//-----------------------------------
+
 	return;
+
 endif;
-//--------------------------------
 
-//-----Terminal Read function------
-if(funcNum == TERMINAL_READ) then
+if (functionNum == DISK_LOAD) then
+	
+	alias pageNum R3;
+	alias BlockNum R4;
 
-	//------CALLING ACQUIRE TERMINAL-------
+	//Acquire the disk
+	backup;
+	R1 = ACQUIRE_DISK;
+	R2 = currentPID;
+	call MOD_0;
+	restore;
+
+	//call returns here thus disk has been acquired by this process and this process has been scheduled
+	
+	[DISK_STATUS_TABLE + 1] = 0;		//LOAD bit set in disk status table
+	[DISK_STATUS_TABLE + 2] = pageNum;	//Page Number set
+	[DISK_STATUS_TABLE + 3] = BlockNum;	//Block number set
+
+	load(pageNum,BlockNum);
+
+	[PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_DISK;
+
+	backup;
+	call MOD_5;
+	restore;
+
+	return;
+
+endif;
+
+if (functionNum == TERMINAL_WRITE) then
+	
 	backup;
 	R1 = ACQUIRE_TERMINAL;
-	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R2 = currentPID;
 	call MOD_0;
 	restore;
-	read;
-	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 4] = WAIT_TERMINAL;
-	//-------------------------------------
 
-	//-----CONTEXT SWITCH------------------
+	alias word R3;
+	print (word);		
+
 	backup;
-	call MOD_5;
-	restore;
-	[[PTBR + 2 * ((R3) / 512)] * 512 + ((R3) % 512)] = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 8];
-	//-------------------------------------
+	R1 = RELEASE_TERMINAL;
+	R2 = currentPID;
+	call MOD_0;
+	restore;	
+
 	return;
-endif;
-//---------------------------------
 
-//----DISK LOAD FUNCTION(final)----
-if (funcNum == DISK_LOAD) then
-	alias page_number R3;
-	alias block_number R4;
+endif;
+
+//---------------------modification uptil STAGE 15-------------------------
+
+//--------------------modification in STAGE 16----------------------------
+
+if (functionNum == TERMINAL_READ) then
+
 	backup;
-	R1 = ACQUIRE_DISK;
-	R2 = currPID;
+	R1 = ACQUIRE_TERMINAL;			//Acquire Terminal----> 8
+	R2 = currentPID;		//Current PID
 	call MOD_0;
 	restore;
-	[DISK_STATUS_TABLE + 1] = 0;	//0-->load operation
-	[DISK_STATUS_TABLE + 2] = page_number;	//set page number
-	[DISK_STATUS_TABLE + 3] = block_number;	//set block number
-	load(page_number,block_number);
-	[PROCESS_TABLE + (currPID*16) + 4] = WAIT_DISK;
-	backup;
-	call MOD_5;
-	restore;
-	return;
-endif;
-//-------------------------------------
 
-//-------------Disk Store(1)(final)------------
-if(funcNum == DISK_STORE) then
-	alias page_number R3;
-	alias block_number R4;
-	backup;
-	R1 = ACQUIRE_DISK;
-	R2 = currPID;
-	call MOD_0;
-	restore;
-	[DISK_STATUS_TABLE + 1] = 1;		//1 --> STORE OPERATION	
-	[DISK_STATUS_TABLE + 2] = page_number;	//set page number
-	[DISK_STATUS_TABLE + 3] = block_number;	//set block number
-	store(page_number,block_number);
-	[PROCESS_TABLE + (currPID*16) + 4] = WAIT_DISK;
-	backup;
-	call MOD_5;
-	restore;
-	return;
-endif;
-//---------------------------------------------
+	read;					//read instruction
 
-return;
-//--------------------------------------------------------------------------------------------------------
+	//state of the current process to WAIT_TERMINAL
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 4] = WAIT_TERMINAL;
+
+	backup;
+	call MOD_5;	
+	restore;
+
+	alias phy_word_addr R4;
+	phy_word_addr = [PTBR + ((R3)/512)*2]*512 + (R3) % 512;
+	[phy_word_addr] = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 8];
+
+	return;
+
+endif;
+
+//----------------------modification uptil STAGE 16----------------------

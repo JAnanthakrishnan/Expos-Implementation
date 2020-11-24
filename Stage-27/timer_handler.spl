@@ -1,95 +1,96 @@
-//--------------------------------------------Timer Interrupt Handler-------------------------------------------------
+//SAVE UASP IN PROCESS TABLE OF CURRENT PROCESS
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16 ) + 13] = SP; 
 
-//save user stack pointer
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
-SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11] * 512 - 1;
+//SET SP TO KASP
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
 
-//save context
+//BACKUP THE PROCESS CONTEXT
 backup;
-alias i R0;
 
-//0 -> swapping not ongoing
-//1 -> SWAP_OUT
-//2 -> SWAP_IN
+alias curPID R5;
 
-//swapping is ongoing or not
-if([SYSTEM_STATUS_TABLE + 5] != 0) then
+curPID = [SYSTEM_STATUS_TABLE + 1];
 
-	//swapping is on now
-	//Call Swap In/Out, if necessary
-	
-	if([SYSTEM_STATUS_TABLE + 1] == 15) then
-		//current process is swapper_daemon
-		//paging_status is SWAP_OUT
-		if([SYSTEM_STATUS_TABLE + 5] == SWAP_OUT) then
-			//swap_out() in pager module
-			backup;
-			R1 = SWAP_OUT;
-			R2 = [SYSTEM_STATUS_TABLE + 1];
-			call MOD_6;
-			if(R0 == -1) then
-				print "SOUTERR";
-			endif;
-			restore;
-		endif;
-		
-		//paging_status is SWAP_IN
-		if([SYSTEM_STATUS_TABLE + 5] == SWAP_IN) then
-			//swap_in() in pager module
+//swapping is initiated
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+	//swapping is ongoing
+
+	if ((curPID == SWAPPER_DAEMON) && ([SYSTEM_STATUS_TABLE + 5] == SWAP_OUT)) then
+		//current process is swapper daemon and status swap out
+		//call pager module
+		backup;
+		R1 = SWAP_OUT;
+		R2 = curPID;
+		call MOD_6;
+		restore;
+	else
+		if ((curPID == SWAPPER_DAEMON) && ([SYSTEM_STATUS_TABLE + 5] == SWAP_IN)) then	
+			//current process is swapper daemon and status swap in
+			//call pager module
 			backup;
 			R1 = SWAP_IN;
-			R2 = [SYSTEM_STATUS_TABLE + 1];
+			R2 = curPID;
 			call MOD_6;
-			if(R0 == -1) then
-				print "SINERR";
-			endif;
 			restore;
 		endif;
 	endif;
 else
-	//swapping is not on now, check whether it must be initiated
-	if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
-		//set paging_status to SWAP_OUT so that swap_out() is invoked in next timer interrupt
+	//check is swapping needs to initiated
+	if ([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+		//swap out to be invoked during next timer interrupt
 		[SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
 	else
-		//swapped out processes are there
-		if([SYSTEM_STATUS_TABLE + 4] != 0) then
-			//check tick of swapped out process if greater than MEM_TICK or mem_free_count > MEM_HIGH
-			//set paging status to SWAP_IN for next timer interrupt
-			i = 3;
-			while(i < 16) do
-				alias process_table R1;
-				process_table = PROCESS_TABLE + (16 * i);
-				if((([process_table + 6] == 1) && ([process_table] > MAX_TICK)) || ([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH)) then
-					[SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
-					break;
+		//swapped out process count
+		if ([SYSTEM_STATUS_TABLE + 4] > 0) then
+			alias pid R6;
+			alias flag R7;
+
+			//tick of any swapped out process > max tick
+			//or
+			//mem free count > mem high
+			pid = 0;
+			while (pid < MAX_PROC_NUM) do
+				if (([PROCESS_TABLE + pid*16 + 6] == 1) && ([PROCESS_TABLE + pid*16] > MAX_TICK)) then
+					flag = 1;	
 				endif;
-				i = i + 1;
+				pid = pid+1;
 			endwhile;
-		endif;
+
+			if ((flag == 1) || ([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH)) then
+				[SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+			endif;
+		endif; 
 	endif;
 endif;
 
-//set state of current process to ready from running
-[PROCESS_TABLE + (16 * [SYSTEM_STATUS_TABLE + 1]) + 4] = READY;
+//STATE CHANGE RUNNING TO READY
+[PROCESS_TABLE +([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = READY;
 
+//Loop through the Process table entries,
+//and increment the TICk field of each process
+alias i R0;
 i = 0;
-//tracks how long process is in memory/swap
-while(i<16) do
-	if([PROCESS_TABLE+(i*16)+4]!=TERMINATED) then
-		[PROCESS_TABLE+(i*16)]=[PROCESS_TABLE+(i*16)]+1;
+while (i < 16) do
+
+	if ([PROCESS_TABLE + (i*16) + 4] != TERMINATED) then
+		
+		[PROCESS_TABLE + (i*16)] = [PROCESS_TABLE + (i*16)] + 1;
+	
 	endif;
-	i=i+1;
+	i = i + 1;
+
 endwhile;
 
-//call scheduler
+//INVOKE CONTEXT SWITCH MODULE
 call MOD_5;
 
+//RESTORE NEW PROCESS CONTEXT
 restore;
 
-//set SP to user stack of scheduled process
-SP = [PROCESS_TABLE+([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
-[PROCESS_TABLE+([SYSTEM_STATUS_TABLE+1]*16)+9] = 0;
+//SET SP TO UASP
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+//SET MODE FLAG TO 0 OF CUR_PROCS
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0; 
 
 ireturn;
-//--------------------------------------------------------------------------------------------------------------------

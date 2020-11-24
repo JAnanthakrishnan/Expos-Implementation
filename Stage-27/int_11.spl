@@ -1,110 +1,130 @@
-//----------------------------------------INTERRUPT 11 MODULE---------------------------------------
+//-------------------------------------INTERRUPT 11-------------------------------------------------------
 
-//extract system_call number from user stack
-alias sys_call_num R0;
-alias userSP R1;
-alias currPID R2;
-currPID = [SYSTEM_STATUS_TABLE + 1];
+alias userSP R0;
 userSP = SP;
-sys_call_num = [[PTBR + (2 * ((userSP - 5) / 512))] * 512 + ((userSP - 5) % 512)];
-//switch to kernel stack
-[PROCESS_TABLE + (16 * [SYSTEM_STATUS_TABLE + 1]) + 13] = SP;
-SP = [PROCESS_TABLE + (16 * [SYSTEM_STATUS_TABLE + 1]) + 11] * 512 - 1;
 
-//-----------Get PID System Call(11)(final)--------------
-if(sys_call_num == 11) then
-	//set mode flag to system call number
-	[PROCESS_TABLE + (currPID * 16) + 9] = sys_call_num;
+alias process_table R7;
+//alias page_table R8;
+alias return_addrs R9;
 
-	//return PID of current process from Process Table
-	[[PTBR + 2 * ((userSP - 1) / 512)] * 512 + ((userSP - 1) % 512)] = [PROCESS_TABLE + (currPID * 16) + 1];
+process_table = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16);
+//page_table = PTBR;
 
-	//reset mode flag to 0 for user mode
-	[PROCESS_TABLE + (currPID * 16) + 9] = 0;
+[process_table + 13] = SP;
+
+SP = [process_table + 11] * 512 - 1;
+
+alias syscall R1;
+alias logical_page_num R2;
+alias offset R3;
+alias physical_page_num R4;
+alias physical_addrs R5;
+logical_page_num = (userSP - 5)/512;
+offset = (userSP - 5) % 512;
+physical_page_num = [PTBR + 2 * logical_page_num];
+physical_addrs = physical_page_num * 512 + offset;
+syscall = [physical_addrs];
+
+logical_page_num = (userSP-1)/512;
+offset = (userSP-1)%512;
+physical_page_num = [PTBR + (2*logical_page_num)];
+return_addrs = physical_page_num*512 + offset;
+
+//--------------------------Getpid System call---------------------------------
+if (syscall == 11) then
+
+	[process_table + 9] = 11;
+	//return PID of current process
+
+	[return_addrs] = [process_table + 1];
 	
-	//set user stack
-	SP = userSP;
-	ireturn;
 endif;
-//-------------------------------------------------------
 
-//-----------Get PPID System Call(12)(final)-------------
-if(sys_call_num == 12) then
-	//set mode field to system call number
-	[PROCESS_TABLE + (16 * currPID) + 9] = sys_call_num;
+//-------------------------Getppid System Call------------------------------------
+if (syscall == 12) then
 
-	//return parent process PID
-	[[PTBR + 2 * ((userSP - 1) / 512)] * 512 + ((userSP - 1) % 512)] = [PROCESS_TABLE + (currPID * 16) + 2];
-	
-	//reset mode field to 0 for user mode
-	[PROCESS_TABLE + (16 * currPID) + 9] = 0;
-	SP = userSP;
-	ireturn;
+	[process_table + 9] = 12;
+	//return parent PID of current process
+
+	[return_addrs] = [process_table + 2];
+
 endif;
-//-------------------------------------------------------
 
-//--------------Wait System Call(13)(final)--------------
-if(sys_call_num == 13) then
-	alias argPID R3;
-	alias ret R4;
+//---------------------------Wait System Call----------------------------------
+if (syscall == 13) then
+
+	//Mode flag -----> 13
+	[process_table + 9] = 13;
 	
-	[PROCESS_TABLE + (16 * currPID) + 9] = sys_call_num;				//change mode field in process table
-	argPID = [[PTBR + 2 * ((userSP - 4) / 512)] * 512 + ((userSP - 4) % 512)];	//extract PID from argument1	
-	ret = [PTBR + 2 * ((userSP - 1) / 512)] * 512 + (userSP - 1) % 512;
+	//Extract PID from user stack
+	//for which the given process
+	//will wait
+	logical_page_num = (userSP - 4) / 512;
+	offset = (userSP - 4) % 512;
+	physical_page_num = [PTBR + 2 * logical_page_num];
+	physical_addrs = physical_page_num * 512 + offset;
+	alias reqPID R6;
+	reqPID = [physical_addrs];
+	
+	//A process should not wait for itself 
+	//or a Terminated process
+	if ((reqPID == [SYSTEM_STATUS_TABLE + 1]) || ([PROCESS_TABLE + reqPID*16 + 4] == TERMINATED) || (reqPID<0) || (reqPID>15)) then
 
-	if((argPID < 0)||(argPID >= 16)||(argPID == currPID)||([PROCESS_TABLE + (16*argPID) + 4] == TERMINATED)) then
-		[ret] = -1;	//return value -1 failure!
-		[PROCESS_TABLE + (16 * currPID) + 9] = 0;				//reset mode flag
-		SP = userSP;
+		//store -1 as return value idicating failure
+		[return_addrs] = -1;
+
+		[process_table + 9] = 0;
+
+		SP = [process_table + 13];
+
 		ireturn;
 	endif;
-	
-	//if all valid conditions are satisfied
-	//change state of current process to 2-tuple (WAIT_PROCESS,argument PID)
-	[PROCESS_TABLE + (16 * currPID) + 4] = WAIT_PROCESS;
-	[PROCESS_TABLE + (16 * currPID) + 5] = argPID;
 
-	//invoke scheduler
+	//state of current process
+	//(WAIT_PROCESS, argument PID)
+	[process_table + 4] = WAIT_PROCESS;
+	[process_table + 5] = reqPID;
+
 	backup;
 	call MOD_5;
 	restore;
 
-	//reset mode field of current process to user mode
-	[PROCESS_TABLE + (16 * currPID) + 9] = 	0;
+	//The following step is executed only when the scheduler runs this process again,
+	//which in turn happens only when the state of the process becomes READY again
+	[return_addrs] = 0;
 
-	//store return value as 0 for success
-	[ret] = 0;
-	
-	//set user stack
-	SP = userSP;
-	ireturn;
 endif;
-//-------------------------------------------------------
 
-//-------------Signal System Call(14)(final)-------------
-if(sys_call_num == 14) then
-	alias i R3;
+//---------------------------------signal system call-----------------------------------------------------
+if (syscall == 14) then
+
+	[process_table + 9] = 14;
+
+	alias i R6;
+	i = 0;	
 	
-	//set mode field of current process to system call number
-	[PROCESS_TABLE + (16 * currPID) + 9] = sys_call_num;
+	//Loop through all the process entry
+	//change state of process waiting for 
+	//the current process
+	while (i < 16) do
+
+		if (([PROCESS_TABLE + i*16 + 4] == WAIT_PROCESS) && ([PROCESS_TABLE + i*16 + 5] == [SYSTEM_STATUS_TABLE + 1])) then
+
+			[PROCESS_TABLE + i*16 + 4] = READY;
+
+		endif;  
+		i  = i + 1;
 	
-	//searching for the process which called wait() for current process
-	i = 0;
-	while(i < 16) do
-		if(([PROCESS_TABLE + (16 * i) + 4] == WAIT_PROCESS) && ([PROCESS_TABLE + (16 * i) + 5] == currPID)) then
-			[PROCESS_TABLE + (16 * i) + 4] = READY;
-		endif;
-		i = i + 1;
 	endwhile;
-	
-	//reset mode field to 0 user
-	[PROCESS_TABLE + (16 * currPID) + 9] = 0;
 
-	//set return value as 0 for success
-	[[PTBR + 2 * ((userSP - 1) / 512)] * 512 + ((userSP - 1) % 512)] = 0;
-	SP = userSP;
-	ireturn;
+	//store 0 as return value 
+	//in the user stack
+	[return_addrs] = 0;
+
 endif;
-//-------------------------------------------------------
 
-//--------------------------------------------------------------------------------------------------
+[process_table + 9] = 0;
+
+SP = [process_table + 13]; 
+
+ireturn;
