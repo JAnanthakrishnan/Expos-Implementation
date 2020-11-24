@@ -27,6 +27,7 @@ load --module 2 /home/ak/Expos-Implementation/Stage-25/mod2.xsm
 load --module 3 /home/ak/Expos-Implementation/Stage-25/mod3.xsm
 load --module 4 /home/ak/Expos-Implementation/Stage-23/mod4.xsm
 load --module 5 /home/ak/Expos-Implementation/Stage-20/mod5.xsm
+load --module 5 /home/ak/Expos-Implementation/Stage-27/mod6.xsm
 load --module 7 /home/ak/Expos-Implementation/Stage-26/mod7.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/ls.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/rm.xsm
