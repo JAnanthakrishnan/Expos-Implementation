@@ -1,6 +1,0 @@
-Get swap block - module 2
-timer interrupt - keep track of swap status (update also)
-module 5 - context switch module (switch to swapper daemon while swap state is active)
-module 6 - pager module (swap_in() and swap_out())
-os-startup
-boot-module
