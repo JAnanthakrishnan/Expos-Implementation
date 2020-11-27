@@ -59,7 +59,7 @@ else
 	inode_table 	= INODE_TABLE + (16 * inode);
 
 	//check userid of inode and process table
-	//if user is not root and does not own file and exclusive permission is set :(
+	//if user is not root and does not own file and exclusive permission is set 
 	if([process_table + 3] != 1) then
 		if([inode_table + 3] != [process_table + 3]) then
 			if([inode_table + 4] == EXCLUSIVE) then
@@ -173,7 +173,7 @@ else
 	restore;
 endif;
 
-//success :)
+//success 
 [ret] = 0;
 [process_table + 9] = 0;
 SP = userSP;
