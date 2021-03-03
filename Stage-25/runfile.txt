@@ -32,3 +32,4 @@ load --exec /home/ak/Expos-Implementation/Stage-25/assgn1.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/assgn2.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/assgn3.xsm
 load --exec /home/ak/Expos-Implementation/Stage-25/assgn4.xsm
+load --data /home/ak/Expos-Implementation/Stage-25/sample.dat

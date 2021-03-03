@@ -1,0 +1,15 @@
+ 
+int main()
+{
+	decl
+		int ret,fd,perm,i,data;
+		str mystr;
+	enddecl
+	begin
+		ret = exposcall("Read",-1,"sample.dat");
+		fd = exposcall("Open",mystr);
+        ret = exposcall("Write",fd,"new_dat");
+		ret = exposcall("Close",fd);
+		return 0;
+	end
+}
